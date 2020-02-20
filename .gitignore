@@ -1,0 +1,33 @@
+### ESP-IDF
+**/build/
+**/sdkconfig
+**/sdkconfig.old
+
+## This partition table is generated
+
+### Documentation build artifacts
+docs/build/
+docs/doxygen/xml/
+docs/doxygen/man/
+docs/doxygen/html/
+docs/doxygen/doxygen-warning-log.txt
+
+### Miscellaneous
+NOTES.md
+tools.mk
+.clang-format
+
+### Qt creator
+*.cflags
+*.config
+*.creator
+*.creator.user
+*.cxxflags
+*.files
+*.includes
+
+### CLion
+.idea/
+cmake-build-*/
+
+
