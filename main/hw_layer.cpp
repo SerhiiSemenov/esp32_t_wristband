@@ -14,6 +14,7 @@
 #include "tft/tftspi.h"
 #include "tft/tft.h"
 #include "spiffs/spiffs_vfs.h"
+#include "PCF8563.h"
 #include "hw_layer.h"
 
 #define ESP_INTR_FLAG_DEFAULT 0

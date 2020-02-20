@@ -1,0 +1,12 @@
+[submodule "externals/mpu9250"]
+	path = externals/mpu9250
+	url = https://github.com/SerhiiSemenov/esp32-MPU-driver.git
+[submodule "externals/esp32_serial_bus"]
+	path = externals/esp32_serial_bus
+	url = https://github.com/SerhiiSemenov/esp32-I2Cbus.git
+[submodule "externals/esp32-PCF8563"]
+	path = externals/esp32-PCF8563
+	url = https://github.com/SerhiiSemenov/esp32-PCF8563.git
+[submodule "externals/esp32_tft_lib"]
+	path = externals/esp32_tft_lib
+	url = https://github.com/SerhiiSemenov/ESP32_TFT_library.git

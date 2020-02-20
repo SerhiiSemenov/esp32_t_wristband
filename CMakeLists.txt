@@ -4,10 +4,10 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 set(EXTRA_COMPONENT_DIRS
-           externals/ESP32_TFT_library/components/spidriver
-           externals/ESP32_TFT_library/components/tft
-           externals/ESP32_TFT_library/components/spiffs
-           externals/esp32-PCF8563-master
+           externals/esp32-PCF8563
+           externals/esp32_tft_lib/components/spidriver
+           externals/esp32_tft_lib/components/tft
+           externals/esp32_tft_lib/components/spiffs
            externals/esp32_serial_bus
            externals/mpu9250)
 project(T-Wristband demo)
