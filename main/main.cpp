@@ -1,12 +1,4 @@
-/* pthread/std::thread example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
+/* T-wristband hardware usage example */
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -14,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <cstring>
+#include <atomic>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_log.h>
@@ -25,7 +18,19 @@
 #include "tft/tftspi.h"
 #include "tft/tft.h"
 
+enum class DemoFunc: unsigned char {
+    Watch = 0,
+    Gyro,
+    Accel,
+    LastItem
+};
+
+DemoFunc& operator++(DemoFunc &_m) {
+    return _m = (_m == DemoFunc::Accel) ? DemoFunc::Watch : static_cast<DemoFunc>(static_cast<unsigned char>(_m)+1);
+}
+
 using namespace std::chrono;
+std::atomic<DemoFunc> current_demo;
 const auto sleep_time = seconds{100};
 static char tmp_buff[64];
 
@@ -44,39 +49,69 @@ void print_thread_info(const char *extra = nullptr)
 void display_time_thread()
 {
     struct tm tm_time = {};
+    const size_t delimetr_size = 2;
+    char time_delimiter[delimetr_size] = {};
     while (true) {
-        tm_time = HWLayer::getInstance()->getTime();
-        _bg = TFT_BLACK;
-        _fg = TFT_GREEN;
-
-        TFT_fillScreen(TFT_BLACK);
-        TFT_setFont(COMIC24_FONT, NULL);
-        sprintf(tmp_buff, "%02d:%02d:%02d", tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec);
-        TFT_print(tmp_buff, CENTER, _height-TFT_getfontheight()-50);
-        std::this_thread::sleep_for(seconds(1));
+        switch(current_demo.load()) {
+            case DemoFunc::Watch:
+                ESP_LOGI(pcTaskGetTaskName(nullptr),"Watch item");
+                tm_time = HWLayer::getInstance()->getTime();
+                _bg = TFT_BLACK;
+                _fg = TFT_GREEN;
+                TFT_fillScreen(TFT_BLACK);
+                TFT_setFont(FONT_7SEG, NULL);
+                strncpy(time_delimiter, tm_time.tm_sec%2==0 ? " " : ":", delimetr_size);
+                sprintf(tmp_buff, "%02d%s%02d", tm_time.tm_hour, time_delimiter, tm_time.tm_min);
+                TFT_print(tmp_buff, CENTER, _height-TFT_getfontheight()-20);
+            break;
+            case DemoFunc::Gyro:
+            {
+                ESP_LOGI(pcTaskGetTaskName(nullptr),"Gyro item");
+                print_thread_info();
+                auto gyro = HWLayer::getInstance()->getGyro();
+                _bg = TFT_BLACK;
+                _fg = TFT_GREEN;
+                TFT_fillScreen(TFT_BLACK);
+                TFT_setFont(UBUNTU16_FONT, NULL);
+                sprintf(tmp_buff, "Gyro:\n x=%+7.2f\n y=%+7.2f\n z=%+7.2f\n", gyro[0], gyro[1], gyro[2]);
+                TFT_print(tmp_buff, CENTER, _height-TFT_getfontheight()-50);
+            }
+            break;
+            case DemoFunc::Accel:
+            {
+                ESP_LOGI(pcTaskGetTaskName(nullptr),"Accel item");
+                print_thread_info();
+                auto accel = HWLayer::getInstance()->getAccel();
+                _bg = TFT_BLACK;
+                _fg = TFT_GREEN;
+                TFT_fillScreen(TFT_BLACK);
+                TFT_setFont(UBUNTU16_FONT, NULL);
+                sprintf(tmp_buff, "Accel:\n x=%+4.2f\n y=%+4.2f\n z=%+4.2f\n", accel.x, accel.y, accel.z);
+                TFT_print(tmp_buff, CENTER, _height-TFT_getfontheight()-50);
+            }
+            break;
+            default:
+                ESP_LOGI(pcTaskGetTaskName(nullptr),"Unhandle item");
+            break;
+        }
+        std::this_thread::sleep_for(milliseconds{500});
     }
 }
 
 void btn_test_thread()
 {
+    DemoFunc curent_item = DemoFunc::Watch;
     while (true) {
         HWLayer::ButtonPress_t press_type = HWLayer::getInstance()->isButtonPresssed();
         if (HWLayer::SHORT_PRESS == press_type) {
             print_thread_info("Buttor is pressed");
+            current_demo.store(++curent_item);
+            ESP_LOGI(pcTaskGetTaskName(nullptr),"new item %d", static_cast<int>(current_demo.load()));
         }
         else if (HWLayer::LONG_PRESS == press_type) {
             print_thread_info("Buttor long pressed");
         }
         std::this_thread::sleep_for(seconds{1});
-    }
-}
-
-void gyro_test_thread()
-{
-    while (true) {
-        print_thread_info();
-        HWLayer::getInstance()->gyroTest();
-        std::this_thread::sleep_for(milliseconds{500});
     }
 }
 
@@ -98,6 +133,7 @@ extern "C" void app_main(void)
     wristBandHw->tftSetup();
     wristBandHw->rtcSetup();
     wristBandHw->gyroSetup();
+    current_demo.store(DemoFunc::Watch);
 
     // Create a thread using deafult values that can run on any core
     auto cfg = esp_pthread_get_default_config();
@@ -110,11 +146,6 @@ extern "C" void app_main(void)
     cfg.inherit_cfg = true;
     esp_pthread_set_cfg(&cfg);
     std::thread thread_1(display_time_thread);
-
-    // Create a thread on core 1
-    cfg = create_config("Gyro demo thread", 1, 3 * 1024, 5);
-    esp_pthread_set_cfg(&cfg);
-    std::thread thread_2(gyro_test_thread);
 
     // Let the main task do something too
     while (true) {

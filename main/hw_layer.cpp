@@ -10,11 +10,9 @@
 #include "driver/i2c.h"
 #include "i2c_bus.hpp"
 #include "mpu/math.hpp"
-#include "mpu/types.hpp"
 #include "tft/tftspi.h"
 #include "tft/tft.h"
 #include "spiffs/spiffs_vfs.h"
-#include "PCF8563.h"
 #include "hw_layer.h"
 
 #define ESP_INTR_FLAG_DEFAULT 0
@@ -209,12 +207,12 @@ HWLayer::ButtonPress_t HWLayer::isButtonPresssed()
     return NOT_PRESSED;//make compiler happy
 }
 
-void HWLayer::LedOn()
+void HWLayer::ledOn()
 {
     gpio_set_level(LED_PIN, 1);
 }
 
-void HWLayer::LedOff()
+void HWLayer::ledOff()
 {
     gpio_set_level(LED_PIN, 0);
 }
@@ -277,4 +275,18 @@ void HWLayer::gyroTest()
         ESP_LOGI(TAG,"accel: [%+6.2f %+6.2f %+6.2f ] (G) \t", accelG.x, accelG.y, accelG.z);
         ESP_LOGI(TAG,"gyro: [%+7.2f %+7.2f %+7.2f ] (º/s)\n", gyroDPS[0], gyroDPS[1], gyroDPS[2]);
     }
+}
+
+mpud::float_axes_t HWLayer::getGyro()
+{
+    mpud::raw_axes_t gyroRaw;    // x, y, z axes as int16
+    m_mpu->rotation(&gyroRaw);       // fetch raw data from the registers
+    return mpud::gyroDegPerSec(gyroRaw, mpud::GYRO_FS_500DPS);
+}
+
+mpud::float_axes_t HWLayer::getAccel()
+{
+    mpud::raw_axes_t accelRaw;       // x, y, z axes as int16
+    m_mpu->acceleration(&accelRaw);  // fetch raw data from the registers
+    return mpud::accelGravity(accelRaw, mpud::ACCEL_FS_4G);
 }

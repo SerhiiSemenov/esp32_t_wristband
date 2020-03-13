@@ -5,6 +5,7 @@
 #include "driver/gpio.h"
 #include "PCF8563.h"
 #include "MPU.hpp"
+#include "mpu/types.hpp"
 
 //T-WRISTband pin defenition
 #define LOW                 0
@@ -50,12 +51,14 @@ public:
     void tftSetup();
     void gyroSetup();
 
-    void LedOn();
-    void LedOff();
+    void ledOn();
+    void ledOff();
     ButtonPress_t isButtonPresssed();
 
     tm getTime();
     void gyroTest();
+    mpud::float_axes_t getGyro();
+    mpud::float_axes_t getAccel();
 
 private:
     HWLayer();
